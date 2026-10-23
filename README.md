@@ -416,7 +416,8 @@ marked `sync: false`. Use **Neon** (no Render-managed database).
 2. In Render, choose **New → Blueprint**, select the repository, and apply
    `render.yaml`. If you prefer a manual Web Service, use root directory
    `backend`, build command `npm ci --include=dev && npm run build`, and start
-   command `npm run prisma:deploy && npm start`.
+   command `npm run start:prod`. The install step must include dev dependencies
+   because the build needs the Prisma CLI and TypeScript.
 3. Enter these values in the Render dashboard:
 
 | Variable                 | Value                                                              |
