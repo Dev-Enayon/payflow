@@ -21,7 +21,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "start:prod": "sh scripts/run-prod.sh"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",

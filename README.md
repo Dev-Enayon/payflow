@@ -399,16 +399,18 @@ Choose the production hosts first, for example `https://payflow.vercel.app` and
 
 ### 1. Production database
 
-Create a managed PostgreSQL database (Render PostgreSQL, Neon, Supabase, etc.)
-and keep its connection string, including any required `sslmode=require`, for
-the backend. Do not point production at a local database. Do not run
-`prisma migrate reset` or delete data.
+Create a managed PostgreSQL database (Neon is recommended). Keep the **pooled**
+connection string for `DATABASE_URL` and the **direct** connection string for
+`DIRECT_URL`. Do not point production at a local database. Do not run
+`prisma migrate reset` or delete data. The start command runs migrations using
+the direct connection when available.
 
 ### 2. Backend on Render
 
 The repository includes `render.yaml`, which defines `payflow-api` with
-`rootDir: backend`, a build step, `prisma migrate deploy` on boot, `/api/health`
-health checks, and secret variables marked `sync: false`.
+`rootDir: backend`, a build step, migrations on boot via `start:prod` (uses
+`DIRECT_URL` when present), `/api/health` health checks, and secret variables
+marked `sync: false`. Use **Neon** (no Render-managed database).
 
 1. Push this repository to GitHub/GitLab.
 2. In Render, choose **New → Blueprint**, select the repository, and apply
@@ -419,7 +421,8 @@ health checks, and secret variables marked `sync: false`.
 
 | Variable                 | Value                                                              |
 | ------------------------ | ------------------------------------------------------------------ |
-| `DATABASE_URL`           | Production PostgreSQL connection string                            |
+| `DATABASE_URL`           | Neon **pooled** connection string (app/runtime)                    |
+| `DIRECT_URL`             | Neon **direct** connection string (migrations)                     |
 | `PAYSTACK_SECRET_KEY`    | Paystack **LIVE** secret key (`sk_live_...`) — backend only        |
 | `FRONTEND_URL`           | `https://<vercel-domain>` (comma-separate preview/custom domains)  |
 | `PAYSTACK_CALLBACK_URL`  | `https://<vercel-domain>/payment/verify`                           |
