@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: payflow-api
+    runtime: node
+    plan: starter
+    rootDir: backend
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run prisma:deploy && npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PAYSTACK_MOCK
+        value: "false"
+      - key: RATE_LIMITS_ENABLED
+        value: "true"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: COOKIE_SAME_SITE
+        value: none
+      - key: BUSINESS_NAME
+        value: PayFlow
+      - key: BRAND_NAME
+        value: PayFlow
+      - key: DATABASE_URL
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: PAYSTACK_CALLBACK_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: SUPPORT_EMAIL
+        sync: false

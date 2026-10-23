@@ -1,0 +1,16 @@
+process.env.NODE_ENV = 'test';
+process.env.PORT = '5999';
+process.env.FRONTEND_URL = 'http://localhost:5173';
+process.env.PAYSTACK_CALLBACK_URL = 'http://localhost:5173/payment/verify';
+process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:postgres@127.0.0.1:55432/payflow_test';
+process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'payflow-test-session-secret-at-least-32-chars-long';
+process.env.PAYSTACK_MOCK = 'false';
+process.env.PAYSTACK_SECRET_KEY = 'sk_test_payflow_automated_test_key';
+process.env.PAYSTACK_PUBLIC_KEY = 'pk_test_payflow_automated_test_key';
+process.env.RATE_LIMITS_ENABLED = 'false';
+process.env.TRUST_PROXY = '0';
+process.env.MIN_PAYMENT_AMOUNT = '100';
+process.env.MAX_PAYMENT_AMOUNT = '5000000';
+process.env.BUSINESS_NAME = 'PayFlow Test';
+process.env.SUPPORT_EMAIL = 'test@payflow.local';
+process.env.BRAND_NAME = 'PayFlow';
