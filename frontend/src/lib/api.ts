@@ -1,6 +1,8 @@
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api').replace(/\/$/, '');
 
 const CSRF_HEADER = 'x-csrf-token';
+const AUTH_ATTEMPT_PATHS = new Set(['/auth/login', '/auth/register', '/auth/me']);
+export const AUTH_UNAUTHORIZED_EVENT = 'payflow:auth-unauthorized';
 let csrfToken: string | null = null;
 
 export function setCsrfToken(token: string | null) {
@@ -88,6 +90,15 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   if (unsafe && response.headers.get('x-csrf-token')) {
     csrfToken = response.headers.get('x-csrf-token');
+  }
+
+  const pathname = path.split('?')[0];
+  if (
+    response.status === 401 &&
+    !AUTH_ATTEMPT_PATHS.has(pathname) &&
+    typeof window !== 'undefined'
+  ) {
+    window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT));
   }
 
   return parseResponse<T>(response);

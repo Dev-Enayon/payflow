@@ -22,16 +22,95 @@ describe('authentication, authorization and API keys', () => {
   it('rejects unauthenticated dashboard, admin and key routes', async () => {
     expect((await request(app).get('/api/dashboard/overview')).status).toBe(401);
     expect((await request(app).get('/api/admin/overview')).status).toBe(401);
+    expect((await request(app).get('/api/admin/settings')).status).toBe(401);
     expect((await request(app).get('/api/keys')).status).toBe(401);
   });
 
   it('rejects invalid credentials and protects login with generic errors', async () => {
     await createUser('MERCHANT', { email: 'merchant@example.com' });
-    const response = await request(app)
+    await createUser('ADMIN', { email: 'admin@example.com' });
+
+    const merchantResponse = await request(app)
       .post('/api/auth/login')
       .send({ email: 'merchant@example.com', password: 'wrong-password' });
-    expect(response.status).toBe(401);
-    expect(response.body.error.message).toBe('Invalid email or password');
+    expect(merchantResponse.status).toBe(401);
+    expect(merchantResponse.body.error.message).toBe('Invalid email or password');
+
+    const adminResponse = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'admin@example.com', password: 'wrong-password' });
+    expect(adminResponse.status).toBe(401);
+    expect(adminResponse.body.error.message).toBe('Invalid email or password');
+    expect(JSON.stringify(adminResponse.body)).not.toMatch(/admin|role/i);
+  });
+
+  it('registers merchants with a server-assigned role and rejects forged roles', async () => {
+    const agent = request.agent(app);
+    const response = await agent
+      .post('/api/auth/register')
+      .set('Origin', 'http://localhost:5173')
+      .send({
+        name: 'New Merchant',
+        email: 'New.Merchant@Example.com',
+        password: 'NewPassword123',
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body.data.user.role).toBe('MERCHANT');
+    expect(response.body.data.user.email).toBe('new.merchant@example.com');
+    expect(response.headers['set-cookie']).toBeDefined();
+
+    const stored = await prisma.user.findUnique({ where: { email: 'new.merchant@example.com' } });
+    expect(stored?.role).toBe('MERCHANT');
+    expect(stored?.passwordHash).not.toContain('NewPassword123');
+
+    const me = await agent.get('/api/auth/me').set('Origin', 'http://localhost:5173');
+    expect(me.status).toBe(200);
+    expect(me.body.data.user.role).toBe('MERCHANT');
+
+    const forged = await request(app)
+      .post('/api/auth/register')
+      .set('Origin', 'http://localhost:5173')
+      .send({
+        name: 'Forged Admin',
+        email: 'forged.admin@example.com',
+        password: 'ForgedPassword123',
+        role: 'ADMIN',
+      });
+    expect(forged.status).toBe(422);
+    expect(await prisma.user.findUnique({ where: { email: 'forged.admin@example.com' } })).toBeNull();
+
+    const profile = await authed(agent, response.body.data.csrfToken as string)
+      .patch('/api/auth/profile')
+      .send({ name: 'Still A Merchant', role: 'ADMIN' });
+    expect(profile.status).toBe(200);
+    expect(profile.body.data.user.role).toBe('MERCHANT');
+    expect(
+      (await authed(agent, response.body.data.csrfToken as string).get('/api/admin/overview')).status,
+    ).toBe(403);
+  });
+
+  it('rejects duplicate, weak and malformed registration input', async () => {
+    await createUser('MERCHANT', { email: 'taken@example.com' });
+
+    const duplicate = await request(app)
+      .post('/api/auth/register')
+      .set('Origin', 'http://localhost:5173')
+      .send({ name: 'Duplicate User', email: 'taken@example.com', password: 'DuplicatePass123' });
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body.error.code).toBe('EMAIL_TAKEN');
+
+    const weak = await request(app)
+      .post('/api/auth/register')
+      .set('Origin', 'http://localhost:5173')
+      .send({ name: 'Weak Password', email: 'weak@example.com', password: 'short' });
+    expect(weak.status).toBe(422);
+
+    const malformed = await request(app)
+      .post('/api/auth/register')
+      .set('Origin', 'http://localhost:5173')
+      .send({ name: 'Bad Email', email: 'not-an-email', password: 'ValidPassword123' });
+    expect(malformed.status).toBe(422);
   });
 
   it('allows admins into admin routes but blocks merchants (server-side RBAC)', async () => {
@@ -42,7 +121,9 @@ describe('authentication, authorization and API keys', () => {
     const merchant = await login(app, 'merchant@example.com');
 
     expect((await authed(admin.agent, admin.csrfToken).get('/api/admin/overview')).status).toBe(200);
+    expect((await authed(admin.agent, admin.csrfToken).get('/api/admin/settings')).status).toBe(200);
     expect((await authed(merchant.agent, merchant.csrfToken).get('/api/admin/overview')).status).toBe(403);
+    expect((await authed(merchant.agent, merchant.csrfToken).get('/api/admin/settings')).status).toBe(403);
     expect((await authed(merchant.agent, merchant.csrfToken).get('/api/dashboard/overview')).status).toBe(200);
   });
 
@@ -165,5 +246,18 @@ describe('authentication, authorization and API keys', () => {
 
     const me = await merchant.agent.get('/api/auth/me');
     expect(me.status).toBe(401);
+  });
+
+  it('revokes administrator access after logout', async () => {
+    await createUser('ADMIN', { email: 'admin@example.com' });
+    const admin = await login(app, 'admin@example.com');
+
+    expect((await authed(admin.agent, admin.csrfToken).get('/api/admin/overview')).status).toBe(200);
+
+    const logout = await authed(admin.agent, admin.csrfToken).post('/api/auth/logout');
+    expect(logout.status).toBe(204);
+
+    expect((await admin.agent.get('/api/admin/overview')).status).toBe(401);
+    expect((await admin.agent.get('/api/admin/settings')).status).toBe(401);
   });
 });

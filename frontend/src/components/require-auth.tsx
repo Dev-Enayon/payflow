@@ -26,7 +26,7 @@ export function RequireAuth({
   }
 
   if (!user) {
-    const next = `${location.pathname}${location.search}`;
+    const next = `${location.pathname}${location.search}${location.hash}`;
     return <Navigate to={`${loginPath}?next=${encodeURIComponent(next)}`} replace />;
   }
 
@@ -35,4 +35,12 @@ export function RequireAuth({
   }
 
   return <>{children}</>;
+}
+
+export function AdminRoute({ children }: { children: ReactNode }) {
+  return (
+    <RequireAuth role="ADMIN" loginPath="/admin/login">
+      {children}
+    </RequireAuth>
+  );
 }

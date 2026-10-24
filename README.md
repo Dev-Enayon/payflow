@@ -101,9 +101,9 @@ SESSION_SECRET=replace-with-at-least-32-random-characters
 PAYSTACK_MOCK=true
 
 SEED_ADMIN_EMAIL=admin@payflow.local
-SEED_ADMIN_PASSWORD=choose-a-strong-local-password
+SEED_ADMIN_PASSWORD=local-admin-password-1
 SEED_MERCHANT_EMAIL=merchant@payflow.local
-SEED_MERCHANT_PASSWORD=choose-a-strong-local-password
+SEED_MERCHANT_PASSWORD=local-merchant-password-1
 ```
 
 > `backend/.env` is gitignored. Never commit real credentials.
@@ -127,7 +127,7 @@ npm run db:migrate
 npm run db:seed
 ```
 
-The seed is idempotent and prints the seeded accounts. If a seed password is omitted, a random password is generated and printed once.
+The seed is idempotent. In development, omitted passwords are randomly generated and printed once. In production, `SEED_ADMIN_EMAIL` and a strong `SEED_ADMIN_PASSWORD` (12+ characters with a letter and a number) are required; the seed never prints production passwords. There is no public admin sign-up.
 
 ### 6. Run both apps
 
@@ -223,6 +223,7 @@ Opaque session cookie `pf_session` plus a CSRF token returned by login and `GET 
 
 | Method | Path                        | Description                              |
 | ------ | --------------------------- | ---------------------------------------- |
+| POST   | `/auth/register`            | Create a merchant account and sign in    |
 | POST   | `/auth/login`               | Sign in and receive user + CSRF token    |
 | POST   | `/auth/logout`              | Revoke the current session               |
 | GET    | `/auth/me`                   | Current user and CSRF token              |
@@ -442,10 +443,13 @@ marked `sync: false`. Use **Neon** (no Render-managed database).
    npm run db:seed
    ```
 
-   Set `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` and
-   `SEED_MERCHANT_EMAIL`/`SEED_MERCHANT_PASSWORD` temporarily, or omit the
-   passwords and capture the generated passwords printed once in the logs.
-   Remove the seed password variables after seeding. The seed is idempotent.
+   Production seeding requires `SEED_ADMIN_EMAIL` plus a strong
+   `SEED_ADMIN_PASSWORD` (12+ characters with a letter and a number). Merchant
+   seeding is optional and requires both `SEED_MERCHANT_EMAIL` and
+   `SEED_MERCHANT_PASSWORD`. The seed refuses weak/default production
+   credentials, never prints production passwords, and will not silently change
+   an existing user's role. Remove the seed password variables after seeding.
+   The seed is idempotent; there is no public admin registration route.
 
 ### 3. Frontend on Vercel
 

@@ -61,6 +61,9 @@ export function PublicLayout() {
                 <Button asChild variant="ghost" size="sm">
                   <Link to="/login">Sign in</Link>
                 </Button>
+                <Button asChild variant="ghost" size="sm">
+                  <Link to="/register">Create account</Link>
+                </Button>
                 <Button asChild size="sm">
                   <Link to="/pay">
                     Make a payment
@@ -94,6 +97,9 @@ export function PublicLayout() {
                   <>
                     <Button asChild variant="outline">
                       <Link to="/login">Sign in</Link>
+                    </Button>
+                    <Button asChild variant="outline">
+                      <Link to="/register">Create account</Link>
                     </Button>
                     <Button asChild>
                       <Link to="/pay">Make a payment</Link>
@@ -132,7 +138,8 @@ export function PublicLayout() {
             title="Product"
             links={[
               { label: 'Make a payment', to: '/pay' },
-              { label: 'Dashboard', to: '/login' },
+              { label: 'Create account', to: '/register' },
+              { label: 'Sign in', to: '/login' },
               { label: 'Integration', to: '/dashboard/integration' },
             ]}
           />

@@ -10,6 +10,16 @@ export const authService = {
     return payload.data;
   },
 
+  async register(input: {
+    name: string;
+    email: string;
+    password: string;
+  }): Promise<AuthPayload> {
+    const payload = await api.post<{ data: AuthPayload }>('/auth/register', input);
+    setCsrfToken(payload.data.csrfToken);
+    return payload.data;
+  },
+
   async login(email: string, password: string): Promise<AuthPayload> {
     const payload = await api.post<{ data: AuthPayload }>('/auth/login', { email, password });
     setCsrfToken(payload.data.csrfToken);

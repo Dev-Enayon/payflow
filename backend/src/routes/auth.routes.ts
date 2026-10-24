@@ -9,6 +9,7 @@ export function createAuthRoutes(rateLimiters = buildRateLimiters()) {
   const service = new AuthService();
   const controller = new AuthController(service);
 
+  router.post('/register', rateLimiters.login, controller.register);
   router.post('/login', rateLimiters.login, controller.login);
   router.post('/logout', requireAuth, controller.logout);
   router.get('/me', requireAuth, controller.me);

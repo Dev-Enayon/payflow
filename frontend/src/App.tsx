@@ -3,7 +3,7 @@ import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/providers/auth-provider';
-import { RequireAuth } from '@/components/require-auth';
+import { AdminRoute, RequireAuth } from '@/components/require-auth';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { ApiError } from '@/lib/api';
 import { PublicLayout } from '@/layouts/public-layout';
@@ -18,6 +18,7 @@ import { PaymentFailedPage, PaymentSuccessPage } from '@/pages/public/payment-le
 import MockCheckoutPage from '@/pages/public/mock-checkout';
 import { PrivacyPage, TermsPage } from '@/pages/public/legal';
 import LoginPage from '@/pages/auth/login';
+import RegisterPage from '@/pages/auth/register';
 import NotFoundPage from '@/pages/not-found';
 import ForbiddenPage from '@/pages/forbidden';
 import { FullPageLoader } from '@/components/ui/spinner';
@@ -103,6 +104,7 @@ export default function App() {
               <Route path="payment/failed" element={<PaymentFailedPage />} />
               <Route path="payment/mock-checkout" element={<MockCheckoutPage />} />
               <Route path="login" element={<LoginPage />} />
+              <Route path="register" element={<RegisterPage />} />
               <Route path="admin/login" element={<LoginPage adminMode />} />
 
               <Route
@@ -126,9 +128,9 @@ export default function App() {
               <Route
                 path="admin"
                 element={
-                  <RequireAuth role="ADMIN" loginPath="/admin/login">
+                  <AdminRoute>
                     <AdminLayout />
-                  </RequireAuth>
+                  </AdminRoute>
                 }
               >
                 <Route index element={<AdminOverviewPage />} />

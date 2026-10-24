@@ -13,6 +13,28 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+const registerSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(2, 'Name must be at least 2 characters')
+      .max(80, 'Name must be 80 characters or fewer'),
+    email: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .email('Enter a valid email address')
+      .max(254, 'Email address is too long'),
+    password: z
+      .string()
+      .min(10, 'Password must be at least 10 characters')
+      .max(128, 'Password must be 128 characters or fewer')
+      .regex(/[A-Za-z]/, 'Password must include a letter')
+      .regex(/\d/, 'Password must include a number'),
+  })
+  .strict();
+
 const profileSchema = z
   .object({
     name: z.string().min(2, 'Name must be at least 2 characters').max(80).optional(),
@@ -31,6 +53,30 @@ const sessionParams = z.object({ id: z.string().cuid() });
 
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
+
+  register = async (req: Request, res: Response) => {
+    const body = parseInput(registerSchema, req.body);
+    const result = await this.auth.register({
+      name: body.name,
+      email: body.email,
+      password: body.password,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
+    res.cookie(env.cookie.name, result.token, sessionCookieOptions(env.sessionTtlMs));
+    res.setHeader('x-csrf-token', result.csrfToken);
+    await writeAuditLog({
+      action: 'auth.registered',
+      actorId: result.user.id,
+      actorEmail: result.user.email,
+      entityType: 'user',
+      entityId: result.user.id,
+      metadata: { role: result.user.role },
+      req,
+    });
+    res.status(201).json({ data: { user: result.user, csrfToken: result.csrfToken } });
+  };
 
   login = async (req: Request, res: Response) => {
     const body = parseInput(loginSchema, req.body);

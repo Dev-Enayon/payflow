@@ -22,6 +22,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { usePublicSettings } from '@/hooks/use-app-data';
 import { ApiError } from '@/lib/api';
+import { safeInternalPath } from '@/lib/navigation';
 
 const schema = z.object({
   email: z.string().trim().min(1, 'Email address is required').email('Enter a valid email address'),
@@ -48,8 +49,7 @@ export default function LoginPage({ adminMode = false }: { adminMode?: boolean }
     setFormError(null);
     try {
       const user = await login(values.email, values.password);
-      const next = searchParams.get('next');
-      const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : null;
+      const safeNext = safeInternalPath(searchParams.get('next'));
 
       if (adminMode && user.role !== 'ADMIN') {
         toast.error('This account does not have administrator access.');
@@ -166,6 +166,14 @@ export default function LoginPage({ adminMode = false }: { adminMode?: boolean }
                 </>
               )}
             </p>
+            {!adminMode ? (
+              <p className="text-center text-[12px] text-muted">
+                New to PayFlow?{' '}
+                <Link to="/register" className="font-semibold text-brand-600 hover:underline">
+                  Create account
+                </Link>
+              </p>
+            ) : null}
             <p className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
               <Lock className="size-3" />
               Sessions are protected with HTTP-only cookies and CSRF checks.
